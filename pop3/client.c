@@ -72,7 +72,7 @@ char *send_cmd_read_response(pop_client_t *client, void *cmd, size_t len) {
     return read_response_line(client);
 }
 
-int pop_connect(char *host, bool ssl, pop_client_t **client) {
+int pop_connect(const char *host, bool ssl, pop_client_t **client) {
     pop_client_t *c = g_new0(pop_client_t, 1);
     *client = c;
     int ret = conn_connect_server(host, ssl, &c->conn);
@@ -99,6 +99,9 @@ int pop_use_ssl(pop_client_t *client) {
 }
 
 int pop_auth(pop_client_t *client, const char *username, const char *passwd) {
+    int err = pop_use_ssl(client);
+    if (err < 0) return err;
+
     GString *cmd = g_string_new(NULL);
     g_string_printf(cmd, P_USER" %s\r\n", username);
     int ret = send_cmd_get_resp_status(client, cmd->str, cmd->len);
@@ -164,6 +167,31 @@ int pop_list(pop_client_t *client, pop_list_t **list, size_t *len) {
     return 0;
 }
 
+static
+ssize_t read_mime_body(pop_client_t *client, char **text) {
+    GString *buf = g_string_new(NULL);
+    char    *line;
+
+    while (true) {
+        ssize_t len = conn_read_line(client->conn, &line);
+        if (len < 0) return len;
+        if (g_str_equal(".", line)) {
+            g_free(line);
+            g_string_append_c(buf, '\0');
+            conn_reset_buffer(client->conn);
+            break;
+        } else {
+            g_string_append(buf, line);
+            g_string_append(buf, "\r\n");
+            g_free(line);
+        }
+    }
+    *text = g_strdup(buf->str);
+    ssize_t sz = buf->len;
+    g_string_free(buf, true);
+    return sz;
+}
+
 int pop_top(pop_client_t *client, int mid, size_t sz, char **data, size_t *data_len) {
     GString *cmd = g_string_new(NULL);
     g_string_printf(cmd, P_TOP" %d %ld\r\n", mid, sz);
@@ -171,7 +199,7 @@ int pop_top(pop_client_t *client, int mid, size_t sz, char **data, size_t *data_
     g_string_free(cmd, true);
     if (ret < 0) return ret;
 
-    ssize_t len = conn_read_line_with_term(client->conn, data, ".\r\n");
+    ssize_t len = read_mime_body(client, data);
     if (len < 0) {
         g_critical("read mail %d encounter connection error: %", mid, conn_err_to_str((int) len));
         return -P_ERR_CONNECTION;
@@ -188,7 +216,7 @@ int pop_retr(pop_client_t *client, int mid, char **data, size_t *data_len) {
     g_string_free(cmd, true);
     if (ret < 0) return ret;
 
-    ssize_t len = conn_read_line_with_term(client->conn, data, ".\r\n");
+    ssize_t len = read_mime_body(client, data);
     if (len < 0) {
         g_critical("read mail %d encounter connection error: %", mid, conn_err_to_str((int) len));
         return -P_ERR_CONNECTION;
@@ -212,10 +240,7 @@ int pop_quit(pop_client_t *client) {
 }
 
 int pop_get_mail_list(pop_client_t *client, const char *username, const char *passwd) {
-    int err = pop_use_ssl(client);
-    if (err < 0) return err;
-
-    err = pop_auth(client, username, passwd);
+    int err = pop_auth(client, username, passwd);
     if (err < 0) return err;
 
     err = pop_list(client, &client->mails, &client->mail_num);

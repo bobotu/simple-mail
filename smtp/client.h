@@ -55,15 +55,6 @@ typedef struct smtp_ehlo_resp_t {
 // smtp_ehlo_resp_clear clear ehlo response.
 void smtp_ehlo_resp_clear(smtp_ehlo_resp_t *resp);
 
-// smtp_mail_t represent a mail, used by smtp_send_mail.
-typedef struct smtp_mail_t {
-    const char *mail_address;
-    const char *password;
-    gchar      **rcpts;
-    const char *subject;
-    const void *payload;
-} smtp_mail_t;
-
 // smtp_client_t represent SMTP protocol client.
 typedef struct smtp_client_t {
     conn_t *conn;
@@ -73,16 +64,16 @@ typedef struct smtp_client_t {
 } smtp_client_t;
 
 // smtp_connect connect to SMTP server.
-int smtp_connect(char *host, bool ssl, smtp_client_t **client);
+int smtp_connect(const char *host, bool ssl, smtp_client_t **client);
 
 // smtp_client_close close SMTP client, and do necessary cleanup.
 void smtp_client_close(smtp_client_t *client);
 
-// smtp_send_mail is a convenient method to send a mail.
-int smtp_send_mail(smtp_client_t *client, smtp_mail_t mail, bool need_auth);
-
 // smtp_ehlo send EHLO command to server.
 int smtp_ehlo(smtp_client_t *client, const char *msg);
+
+// smtp_use_ssl upgrade connection to SSL if it not in SSL mode.
+int smtp_use_ssl(smtp_client_t *client);
 
 // smtp_auth do SMTP authentication.
 int smtp_auth(smtp_client_t *client, const char *username, const char *passwd);
@@ -92,7 +83,7 @@ int smtp_mail(smtp_client_t *client, const char *from);
 
 // smtp_rcpt send RCPT TO command to server.
 // rcpt is NULL terminated array of string.
-int smtp_rcpt(smtp_client_t *client, const char **rcpt);
+int smtp_rcpt(smtp_client_t *client, char **rcpt);
 
 // smtp_data send data as mail payload to server.
 int smtp_data(smtp_client_t *client, const void *data, size_t len);

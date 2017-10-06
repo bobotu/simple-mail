@@ -28,7 +28,7 @@ const char *smtp_err_to_str(int err_code) {
             return "Underlay networking error, please see log for more information.";
             // TODO: SMTP protocol error codes.
         default:
-            return "Unknown error.";
+            return "SMTP Protocol error";
     }
 }
 

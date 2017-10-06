@@ -17,22 +17,29 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 set(CONN_SOURCE_FILES conn/conn.c conn/conn.h conn/error.h conn/op.c conn/log.h client/main.c)
 add_library(conn STATIC ${CONN_SOURCE_FILES})
 include_directories(conn)
-target_link_libraries(conn ${OPENSSL_LIBRARIES})
+target_link_libraries(conn ${OPENSSL_LIBRARIES} ${GLIB_LIBRARIES})
 
 set(SMTP_SOURCE_FILES smtp/smtp.h smtp/parser.c smtp/error.h
         smtp/parser.h smtp/client.c smtp/client.h smtp/log.h)
 add_library(smtp STATIC ${SMTP_SOURCE_FILES})
 include_directories(smtp)
-target_link_libraries(smtp conn ${GLIB_LIBRARIES} ${GMIME_LIBRARIES})
+target_link_libraries(smtp conn ${GLIB_LIBRARIES})
 
 set(POP3_SOURCE_FILES pop3/client.c pop3/client.h pop3/log.h pop3/pop3.h pop3/error.h)
 add_library(pop3 STATIC ${POP3_SOURCE_FILES})
 include_directories(pop3)
 target_link_libraries(pop3 conn ${GLIB_LIBRARIES})
 
-set(SOURCE_FILES client/main.c)
+set(SOURCE_FILES client/main.c client/common.h client/send.c client/recv.c)
 add_executable(simple_mail ${SOURCE_FILES})
-target_link_libraries(simple_mail smtp pop3 ${GMIME_LIBRARIES} ${GLIB_LIBRARIES})
+add_dependencies(simple_mail argparse)
+target_link_libraries(simple_mail smtp pop3 m ${CMAKE_BINARY_DIR}/libargparse.a ${GMIME_LIBRARIES} ${GLIB_LIBRARIES})
+
+include_directories(vendor/argparse)
+add_custom_target(argparse
+        COMMAND cd ${CMAKE_SOURCE_DIR}/vendor/argparse &&
+                make libargparse.a &&
+                cp libargparse.a ${CMAKE_BINARY_DIR})
 
 add_library(greatest INTERFACE)
 target_sources(greatest INTERFACE ${PROJECT_SOURCE_DIR}/vendor/greatest/greatest.h)

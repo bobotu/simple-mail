@@ -71,4 +71,11 @@ int conn_send(conn_t *conn, const void *buf, size_t len);
 // conn_read read specified size of data via connection.
 ssize_t conn_read(conn_t *conn, void *buf, size_t n);
 
+// conn_reset_buffer clear connection read buffer.
+static inline
+void conn_reset_buffer(conn_t *conn) {
+    conn->buf.chunk_start = conn->buf.chunk_end = conn->buf.chunk;
+    g_string_truncate(conn->buf.result_buf, 0);
+}
+
 #endif //SIMPLE_MAIL_CONN_H

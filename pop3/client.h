@@ -36,7 +36,7 @@ typedef struct pop_client_t {
 } pop_client_t;
 
 // pop_connect connect to pop mail server.
-int pop_connect(char *host, bool ssl, pop_client_t **client);
+int pop_connect(const char *host, bool ssl, pop_client_t **client);
 
 void pop_client_close(pop_client_t *client);
 
@@ -68,8 +68,5 @@ int pop_del(pop_client_t *client, int mid);
 
 // pop_quit end the POP3 transaction.
 int pop_quit(pop_client_t *client);
-
-// pop_get_mail_list do authentication and get mail list.
-int pop_get_mail_list(pop_client_t *client, const char *username, const char *passwd);
 
 #endif //SIMPLE_MAIL_POP3_CLIENT_H

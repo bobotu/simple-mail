@@ -7,7 +7,6 @@
 #include "log.h"
 #include <glib.h>
 #include <conn.h>
-#include <gmime/gmime.h>
 
 #include "client.h"
 #include "error.h"
@@ -80,7 +79,7 @@ int smtp_send_command_get_code(conn_t *conn, const char *cmd, size_t len) {
     return ret;
 }
 
-int smtp_connect(char *host, bool ssl, smtp_client_t **client) {
+int smtp_connect(const char *host, bool ssl, smtp_client_t **client) {
     smtp_client_t *c = g_new0(smtp_client_t, 1);
     *client = c;
     int ret = conn_connect_server(host, ssl, &c->conn);
@@ -239,9 +238,8 @@ int smtp_auth_plain(smtp_client_t *c, const char *un, const char *pw) {
     return 0;
 }
 
-int smtp_auth(smtp_client_t *client, const char *username, const char *passwd) {
+int smtp_use_ssl(smtp_client_t *client) {
     smtp_ehlo_resp_t *r = &client->ehlo_resp;
-
     if (r->starttls && !client->conn->is_ssl) {
         g_info("find server support TLS, upgrading to TLS connection");
         char *cmd = S_STARTTLS"\r\n";
@@ -255,7 +253,14 @@ int smtp_auth(smtp_client_t *client, const char *username, const char *passwd) {
         int err = conn_upgrade_ssl(client->conn);
         if (err < 0) return -S_ERR_CONNECTION;
     }
+    return 0;
+}
 
+int smtp_auth(smtp_client_t *client, const char *username, const char *passwd) {
+    int err = smtp_use_ssl(client);
+    if (err < 0) return err;
+
+    smtp_ehlo_resp_t *r = &client->ehlo_resp;
     if (r->auth_methods.login) {
         return smtp_auth_login(client, username, passwd);
     } else if (r->auth_methods.plain) {
@@ -277,7 +282,7 @@ int smtp_mail(smtp_client_t *client, const char *from) {
     return 0;
 }
 
-int smtp_rcpt(smtp_client_t *client, const char **rcpt) {
+int smtp_rcpt(smtp_client_t *client, char **rcpt) {
     GString *cmd = g_string_new(NULL);
 
     int sent = 0;
@@ -316,50 +321,6 @@ int smtp_data(smtp_client_t *client, const void *data, size_t len) {
     if (ret < 0) return ret;
     if (ret != COMMAND_OK_CODE) return -ret;
 
-    return 0;
-}
-
-char *mail_to_mime_str(smtp_mail_t mail) {
-    char         *to  = g_strjoinv(";", mail.rcpts);
-    GMimeMessage *msg = g_mime_message_new(true);
-    g_mime_object_set_header((GMimeObject *) msg, "From", mail.mail_address, NULL);
-    g_mime_object_set_header((GMimeObject *) msg, "To", to, NULL);
-    g_mime_message_set_date(msg, g_date_time_new_now_local());
-    g_mime_message_set_subject(msg, mail.subject, NULL);
-    g_free(to);
-
-    GMimeTextPart *part = g_mime_text_part_new_with_subtype("plain");
-    g_mime_text_part_set_text(part, mail.payload);
-    g_mime_message_set_mime_part(msg, (GMimeObject *) part);
-    g_object_unref(part);
-
-    return g_mime_object_to_string((GMimeObject *) msg, NULL);
-}
-
-int smtp_send_mail(smtp_client_t *client, smtp_mail_t mail, bool need_auth) {
-    int err = 0;
-    if (need_auth) {
-        err = smtp_ehlo(client, mail.mail_address);
-        if (err < 0) return err;
-
-        err = smtp_auth(client, mail.mail_address, mail.password);
-        if (err < 0) return err;
-    }
-
-    err = smtp_mail(client, mail.mail_address);
-    if (err < 0) return err;
-
-    err = smtp_rcpt(client, (const char **) mail.rcpts);
-    if (err < 0) {
-        g_critical("%d rcpt failed", -err);
-    }
-
-    char *payload = mail_to_mime_str(mail);
-
-    err = smtp_data(client, payload, strlen(payload));
-    if (err < 0) return err;
-
-    g_free(payload);
     return 0;
 }
 
