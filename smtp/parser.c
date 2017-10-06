@@ -37,8 +37,8 @@ smtp_parse_ctx smtp_new_parse_ctx(char *buf) {
 
 static
 int parse_code(smtp_parse_ctx *ctx) {
-    int ret = S_ERR_BAD_RESPONSE;
-    if (ctx->len < 3) return ret;
+    int ret = 0;
+    if (ctx->len < 3) return -S_ERR_BAD_RESPONSE;
     const char *str = ctx_readn(ctx, 3);
 
     for (int i = 0; i < 3; i++) {

@@ -246,11 +246,12 @@ int smtp_auth(smtp_client_t *client, const char *username, const char *passwd) {
         int  ret  = smtp_send_command_get_code(client->conn, cmd, strlen(cmd));
         if (ret < 0) return ret;
         if (ret != COMMAND_READY_CODE) {
-            g_error(S_STARTTLS
-                    " command fail. response code is: %d", ret);
+            g_critical(S_STARTTLS
+                       " command fail. response code is: %d", ret);
             return -ret;
         }
-        conn_upgrade_ssl(client->conn);
+        int err = conn_upgrade_ssl(client->conn);
+        if (err < 0) return -S_ERR_CONNECTION;
     }
 
     if (r->auth_methods.login) {
@@ -292,7 +293,7 @@ int smtp_rcpt(smtp_client_t *client, const char **rcpt) {
             g_warning("rcpt to: %s fail. error: %d", rcpt[i], smtp_err_to_str(ret));
             continue;
         }
-        sent--;
+        sent++;
     }
     g_string_free(cmd, true);
     return sent - cnt;
