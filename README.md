@@ -1,7 +1,7 @@
 # Simple Mail  
 Simple-Mail 是一个简单的命令行 SMTP & POP3 客户端工具   
 
-##Build  
+## Build  
 依赖:  
 glib-2.0  
 gmime-3.0  
@@ -16,16 +16,16 @@ cmake ..
 make simple-mail
 ```  
 
-##Usage  
+## Usage  
 
-###发送邮件
+### 发送邮件
 ```shell
 ./simple-mail send -u "邮箱" -p "密码" -H "邮件服务器" -t "接收人" -s "主题" <<EOF
 正文
 EOF
 ```  
 
-###接收邮件   
+### 接收邮件   
 ```shell
 ./simple-mail recv -u "邮箱" -p "密码" -H "邮件服务器"
 ```  
