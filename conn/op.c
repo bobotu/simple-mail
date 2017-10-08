@@ -3,6 +3,7 @@
 //
 
 #include <unistd.h>
+#include <string.h>
 
 #include "log.h"
 #include <glib.h>

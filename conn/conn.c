@@ -2,6 +2,7 @@
 // Created by 李泽钧 on 2017/9/26.
 //
 
+#include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netdb.h>

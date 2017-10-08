@@ -2,6 +2,8 @@
 // Created by 李泽钧 on 2017/9/26.
 //
 
+#include <string.h>
+
 #include "log.h"
 #include <glib.h>
 #include <conn.h>
