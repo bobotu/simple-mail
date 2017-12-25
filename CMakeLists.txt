@@ -31,9 +31,9 @@ include_directories(pop3)
 target_link_libraries(pop3 conn ${GLIB_LIBRARIES})
 
 set(SOURCE_FILES client/main.c client/common.h client/send.c client/recv.c)
-add_executable(simple_mail ${SOURCE_FILES})
-add_dependencies(simple_mail argparse)
-target_link_libraries(simple_mail smtp pop3 m ${CMAKE_BINARY_DIR}/libargparse.a ${GMIME_LIBRARIES} ${GLIB_LIBRARIES})
+add_executable(simple-mail ${SOURCE_FILES})
+add_dependencies(simple-mail argparse)
+target_link_libraries(simple-mail smtp pop3 m ${CMAKE_BINARY_DIR}/libargparse.a ${GMIME_LIBRARIES} ${GLIB_LIBRARIES})
 
 include_directories(vendor/argparse)
 add_custom_target(argparse
