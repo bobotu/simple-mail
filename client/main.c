@@ -31,7 +31,7 @@ void init() {
 int main(int argc, const char **argv) {
     init();
 
-    struct app_base_options base_opts;
+    struct app_base_options base_opts = {NULL, NULL, NULL, false, false};
     struct app_send_options send_opts = {&base_opts, NULL, NULL, "plain"};
     struct app_recv_options recv_opts = {&base_opts, false, false, true, -1, -1};
 
